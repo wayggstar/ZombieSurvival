@@ -2,3 +2,14 @@ name: ZombieSurvival
 version: '${project.version}'
 main: org.wayggstar.zombiesurvival.ZombieSurvival
 api-version: '1.16'
+commands:
+  게임시작:
+    description: 좀비게임 시작
+  리로드:
+    description: 리로드
+  게임종료:
+    description: 게임을 종료합니다
+  특수좀비:
+    description: 직업을 지정합니다.
+  직업확정:
+    description: "직업을 확정합니다."

@@ -9,6 +9,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class TimeManager {
     private boolean isDay = true;
+    private boolean morningMessageSent = false;
+    private boolean nightMessageSent = false;
     private int gameDay = 0;
     private final JavaPlugin plugin;
 
@@ -26,20 +28,25 @@ public class TimeManager {
             public void run() {
                 World world = Bukkit.getWorld("world");
                 if (world == null) return;
+
                 long time = world.getTime();
 
-                if (time >= 0 && time < 12300 && !isDay) {
-                    isDay = true;
-                    broadcastMessage(ChatColor.GREEN + "낮이 되었습니다.");
-                    gameDay++;
-                } else if (time >= 12300 && time < 24000 && isDay) {
-                    isDay = false;
-                    broadcastMessage(ChatColor.RED + "밤이 되었습니다.");
+                if (time >= 0 && time < 1200) {
+                    if (!morningMessageSent) {
+                        isDay = true;
+                        morningMessageSent = true;
+                        nightMessageSent = false;
+                        broadcastMessage(ChatColor.GREEN + "새로운 날이 시작되었습니다! 오늘은 " + gameDay + "일째입니다.");
+                        gameDay++;
+                    }
                 }
-
-                if (time == 0) {
-                    gameDay++;
-                    Bukkit.broadcastMessage("새로운 날이 시작되었습니다! 오늘은 " + gameDay + "일째입니다.");
+                else if (time >= 13000 && time < 14000) {
+                    if (!nightMessageSent) {
+                        isDay = false;
+                        nightMessageSent = true;
+                        morningMessageSent = false;
+                        broadcastMessage(ChatColor.RED + "밤이 되었습니다.");
+                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 100L);
@@ -49,5 +56,9 @@ public class TimeManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendTitle(message, "", 5, 40, 5);
         }
+    }
+
+    public boolean IsDay(){
+        return isDay;
     }
 }
