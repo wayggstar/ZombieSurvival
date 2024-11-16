@@ -1,0 +1,4 @@
+name: ZombieSurvival
+version: '${project.version}'
+main: org.wayggstar.zombiesurvival.ZombieSurvival
+api-version: '1.16'
