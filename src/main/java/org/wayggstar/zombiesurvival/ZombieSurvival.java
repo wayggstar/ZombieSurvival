@@ -15,39 +15,36 @@ import org.wayggstar.zombiesurvival.Listener.HumanListener;
 import org.wayggstar.zombiesurvival.Listener.ZombieListener;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
-import java.util.Objects;
-
 
 public final class ZombieSurvival extends JavaPlugin implements CommandExecutor {
 
     private GameManager gameManager;
     private HumanList humanList;
-    private final ZombieJobManager zombieJobManager;
-    private final HumanJobManager humanJobManager;
-
-    public ZombieSurvival(ZombieJobManager zombieJobManager, HumanJobManager humanJobManager) {
-        this.zombieJobManager = zombieJobManager;
-        this.humanJobManager = humanJobManager;
-    }
+    private SideManager sideManager;
+    private ZombieListener zombieListener;
+    private HumanListener humanListener;
+    private JobAbility jobAbility;
+    private ZombieJob zombieJob;
+    private ZombieJobManager zombieJobManager;
+    private HumanJob humanJob;
+    private HumanJobManager humanJobManager;
 
     @Override
     public void onEnable() {
-        SideManager sideManager = new SideManager();
+        sideManager = new SideManager();
         sideManager.createTeam("zombie");
         sideManager.createTeam("DIE");
 
         getLogger().info(ChatColor.GREEN + "좀비 서바이벌 플러그인 활성화");
 
-        if (!getDataFolder().exists()) {
-            boolean mkdirs = getDataFolder().mkdirs();
-        }
+        if (!getDataFolder().exists()) getDataFolder().mkdirs();
         saveDefaultConfig();
 
         humanList = new HumanList(this);
         gameManager = new GameManager(this, sideManager, humanList);
-        ZombieListener zombieListener = new ZombieListener(sideManager);
-        HumanListener humanListener = new HumanListener();
-        JobAbility jobAbility = new JobAbility(sideManager, this);
+        zombieListener = new ZombieListener(sideManager, this);
+        humanListener = new HumanListener(gameManager);
+        jobAbility = new JobAbility(sideManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(zombieListener, this);
         getServer().getPluginManager().registerEvents(jobAbility, this);
@@ -55,11 +52,11 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
 
         System.out.println(humanList.getPlayerNames().toString());
 
-        Objects.requireNonNull(getCommand("게임시작")).setExecutor(this);
-        Objects.requireNonNull(getCommand("리로드")).setExecutor(this);
-        Objects.requireNonNull(getCommand("게임종료")).setExecutor(this);
-        Objects.requireNonNull(getCommand("특수좀비")).setTabCompleter(new TabCompleterZombie(zombieJobManager, humanList));
-        Objects.requireNonNull(getCommand("직업확정")).setTabCompleter(new TabCompleterHuman(humanJobManager, humanList));
+        getCommand("게임시작").setExecutor(this);
+        getCommand("리로드").setExecutor(this);
+        getCommand("게임종료").setExecutor(this);
+        getCommand("특수좀비").setTabCompleter(new TabCompleterZombie(zombieJobManager, humanList));
+        getCommand("직업확정").setTabCompleter(new TabCompleterHuman(humanJobManager, humanList));
     }
 
     @Override

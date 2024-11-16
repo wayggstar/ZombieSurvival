@@ -4,7 +4,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.wayggstar.zombiesurvival.Team.SideManager;
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class HumanList {
@@ -32,6 +32,12 @@ public class HumanList {
     public void load() {
         FileConfiguration config = plugin.getConfig();
         playerNames = config.getStringList("humans");
+        if (playerNames == null) playerNames = new ArrayList<>();
     }
 
+    public void save() {
+        FileConfiguration config = plugin.getConfig();
+        config.set("humans", playerNames);
+        plugin.saveConfig();
+    }
 }

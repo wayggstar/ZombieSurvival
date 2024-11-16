@@ -6,10 +6,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Side {
-    private final Set<Player> members;
+    private String Side;
+    private Set<Player> members;
 
-    public Side(){
+    public Side(String side){
+        this.Side = side;
         this.members = new HashSet<>();
+    }
+
+    public String getSide(){
+        return Side;
     }
 
     public void addPlayerSide(Player player){

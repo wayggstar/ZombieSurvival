@@ -1,16 +1,20 @@
 package org.wayggstar.zombiesurvival.Jobs.Human;
 
+import org.bukkit.Material;
+import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class HumanJob {
-    private final String name;
-    private final List<ItemStack> startingItems;
+    private String name;
+    private String description;
+    private List<ItemStack> startingItems;
 
-    public HumanJob(String name){
+    public HumanJob(String name, String description){
         this.name = name;
+        this.description = description;
         this.startingItems = new ArrayList<>();
     }
 
@@ -18,6 +22,9 @@ public class HumanJob {
         return name;
     }
 
+    public String getDescription() {
+        return description;
+    }
 
     public List<ItemStack> getStartingItems() {
         return startingItems;

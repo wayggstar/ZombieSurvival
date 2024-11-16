@@ -1,8 +1,9 @@
 package org.wayggstar.zombiesurvival.Listener;
 
+import armorequip.armorequip.ArmorEquip;
 import armorequip.armorequip.ArmorEquipEvent;
 import org.bukkit.*;
-import org.bukkit.block.Block;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,26 +16,34 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJob;
 import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJobManager;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ZombieListener implements Listener {
 
     private final SideManager sideManager;
+    private final JavaPlugin plugin;
     private final ZombieJobManager zombieJobManager;
+    private final Random random = new Random();
+    private List<ZombieJob> zombieJobs = new ArrayList<>();
     private List<ItemStack> itemStacks;
+    private List<Player> randomplayer;
 
-    public ZombieListener(SideManager sideManager) {
+    public ZombieListener(SideManager sideManager, JavaPlugin plugin) {
         this.sideManager = sideManager;
-        List<ZombieJob> zombieJobs = new ArrayList<>();
+        this.plugin = plugin;
         this.zombieJobManager = new ZombieJobManager(zombieJobs);
+        Random random = new Random();
         DiaItemList();
     }
 
@@ -126,6 +135,9 @@ public class ZombieListener implements Listener {
     public void HopperBlock(BlockPlaceEvent e){
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+            if (e.getBlock() == null) {
+                return;
+            }
             if (e.getBlock().getType() == Material.HOPPER || e.getBlock().getType() == Material.HOPPER_MINECART) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 호퍼를 설치할 수 없습니다.");
@@ -179,7 +191,7 @@ public class ZombieListener implements Listener {
 
     @EventHandler
     public void onZombieDeath(PlayerDeathEvent e){
-        Player player = e.getEntity();
+        Player player = (Player) e.getEntity();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")){
             e.setDeathMessage("");
         }
@@ -207,26 +219,20 @@ public class ZombieListener implements Listener {
             Player player = event.getPlayer();
             if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
                 if (player.getInventory().getItemInMainHand().getType() == Material.DIAMOND) {
-                    Player closestPlayer = null;
-                    double closestDistance = Double.MAX_VALUE;
-
-                    for (Entity entity : player.getWorld().getEntities()) {
-                        if (entity instanceof Player && !entity.equals(player)) {
-                            Player otherPlayer = (Player) entity;
-                            double distance = player.getLocation().distance(otherPlayer.getLocation());
-
-                            if (distance < closestDistance) {
-                                closestDistance = distance;
-                                closestPlayer = otherPlayer;
-                            }
+                    List<Player> randomplayer = new ArrayList<>();
+                    for (Player target : Bukkit.getOnlinePlayers()) {
+                        if (!sideManager.isPlayerTeam(target.getName(), "zombie") &&
+                                !sideManager.isPlayerTeam(target.getName(), "DIE")) {
+                            randomplayer.add(target);
                         }
                     }
-                    if (closestPlayer == null) {
+                    if (randomplayer.isEmpty()) {
                         player.sendMessage("추적할 수 있는 대상이 없습니다.");
                         return;
                     }
-                    Location targetLocation = closestPlayer.getLocation();
-                    setupCompass(player, closestPlayer, targetLocation);
+                    Player target = randomplayer.get(random.nextInt(randomplayer.size()));
+                    Location targetLocation = target.getLocation();
+                    setupCompass(player, target, targetLocation);
                 }
             }
         }
@@ -239,29 +245,9 @@ public class ZombieListener implements Listener {
         player.setCompassTarget(targetLocation);
         ItemStack compass = new ItemStack(Material.COMPASS);
         ItemMeta meta = compass.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(target.getName() + "님의 §4위치");
-        }
+        meta.setDisplayName(target.getName() + "님의 §4위치");
         compass.setItemMeta(meta);
         player.getInventory().addItem(compass);
         player.sendMessage("나침반이 " + target.getName() + "의 위치를 가리키도록 설정되었습니다.");
-    }
-
-    @EventHandler
-    public void onLavaGet(PlayerInteractEvent e){
-        Player player = e.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
-            if (item.getType() == Material.BUCKET) {
-                Block clickedBlock = e.getClickedBlock();
-                if (clickedBlock != null) {
-                    if (clickedBlock.getType() == Material.LAVA) {
-                        e.setCancelled(true);
-                        player.sendMessage(ChatColor.RED + "양동이가 녹아버렸습니다........");
-                        player.getInventory().remove(Material.BUCKET);
-                    }
-                }
-            }
-        }
     }
 }

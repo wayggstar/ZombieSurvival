@@ -5,19 +5,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SideManager {
-    private final Map<String, Side> sides;
+    private Map<String, Side> sides;
 
     public SideManager() {
         sides = new HashMap<>();
     }
 
-    public void createTeam(String name) {
+    public Side createTeam(String name) {
         if (!sides.containsKey(name)) {
-            Side team = new Side();
+            Side team = new Side(name);
             sides.put(name, team);
+            return team;
         }
+        return null;
     }
 
+    public Side getSide(String name) {
+        return sides.get(name);
+    }
 
     public void addPlayerToTeam(Player player, String teamName) {
         Side side = sides.get(teamName);

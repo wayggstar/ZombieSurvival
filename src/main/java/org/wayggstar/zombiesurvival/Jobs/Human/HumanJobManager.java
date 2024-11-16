@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJob;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,6 +14,7 @@ public class HumanJobManager {
     private final Map<HumanJob, Integer> jobLimits;
     private final Map<HumanJob, List<Player>> jobAssignments;
     private final Map<Player, HumanJob> playerJobs;
+    private final int MAX_PLAYERS_PER_JOB = 2;
 
     public HumanJobManager(List<HumanJob> availableJobs){
         this.availableJobs = availableJobs;
@@ -21,15 +23,14 @@ public class HumanJobManager {
         this.playerJobs = new HashMap<>();
 
         for (HumanJob job : availableJobs){
-            int MAX_PLAYERS_PER_JOB = 2;
             jobLimits.put(job, MAX_PLAYERS_PER_JOB);
             jobAssignments.put(job, new ArrayList<>());
         }
     }
 
-    public void assignJob(Player player){
+    public boolean assignJob(Player player){
         if (playerJobs.containsKey(player)){
-            return;
+            return false;
         }
 
         HumanJob job = getRandomAvailableJob();
@@ -38,9 +39,10 @@ public class HumanJobManager {
             jobAssignments.get(job).add(player);
             player.getInventory().addItem(job.getStartingItems().toArray(new ItemStack[0]));
             player.sendMessage(ChatColor.GREEN + "축하합니다! 당신은 인간 직업 '" + job.getJob() + ChatColor.GREEN + "'이/가 되었습니다.");
-            return;
+            return true;
         }
         player.sendMessage(ChatColor.RED + "아쉽게도 일반인이군요..");
+        return false;
     }
     public HumanJob getPlayerJob(Player player){
         return playerJobs.get(player);

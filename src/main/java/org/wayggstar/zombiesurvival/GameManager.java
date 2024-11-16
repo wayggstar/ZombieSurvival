@@ -33,17 +33,17 @@ import static org.bukkit.Bukkit.getServer;
 
 public class GameManager implements Listener {
 
-    private final HumanJobManager humanJobManager;
-    private final ZombieJobManager zombieJobManager;
+    private HumanJobManager humanJobManager;
+    private ZombieJobManager zombieJobManager;
     private final JavaPlugin plugin;
     private final SideManager sideManager;
     private final HumanList humanList;
-    private final TimeManager timeManager;
+    private TimeManager timeManager;
     private boolean gamePlaying = false;
     private int gameDay = 0;
     private final Map<Player, Integer> burningStack = new HashMap<>();
-    private final List<HumanJob> humanJobs = new ArrayList<>();
-    private final List<ZombieJob> zombieJobs = new ArrayList<>();
+    private List<HumanJob> humanJobs = new ArrayList<>();
+    private List<ZombieJob> zombieJobs = new ArrayList<>();
 
     public GameManager(JavaPlugin plugin, SideManager sideManager, HumanList humanList) {
         this.plugin = plugin;
@@ -61,34 +61,34 @@ public class GameManager implements Listener {
     }
 
     private void HumanJobSetUp() {
-        HumanJob Miner = new HumanJob("광부");
+        HumanJob Miner = new HumanJob("광부", "처음부터 효율 1 내구성 1 철 곡괭이를 받고 시작합니다");
         ItemStack minerpickaxe = new ItemStack(Material.IRON_PICKAXE);
         ItemMeta meta1 = minerpickaxe.getItemMeta();
-        Objects.requireNonNull(meta1).setDisplayName("§6§l광부§r의 §7§l곡괭이");
+        meta1.setDisplayName("§6§l광부§r의 §7§l곡괭이");
         meta1.addEnchant(Enchantment.DURABILITY, 1, true);
         meta1.addEnchant(Enchantment.DIG_SPEED, 1, true);
         minerpickaxe.setItemMeta(meta1);
         Miner.addStartingItem(minerpickaxe);
 
-        HumanJob Doctor = new HumanJob("의사");
+        HumanJob Doctor = new HumanJob("의사", "주변에 사람들을 회복시켜 줍니다 (3칸) X Y Z (3칸 3칸 3칸)");
         ItemStack healkit = new ItemStack(Material.GOLD_INGOT);
         ItemMeta meta2 = healkit.getItemMeta();
-        Objects.requireNonNull(meta2).setDisplayName("§a§l의사§r의 §4§l치료키트");
+        meta2.setDisplayName("§a§l의사§r의 §4§l치료키트");
         healkit.setItemMeta(meta2);
         Doctor.addStartingItem(healkit);
 
-        HumanJob Fire = new HumanJob("소방대원");
+        HumanJob Fire = new HumanJob("소방대원", "체력 5칸을 추가로 얻습니다");
 
-        HumanJob Glider = new HumanJob("글라이더");
+        HumanJob Glider = new HumanJob("글라이더", "겉날개 내구도 30짜리 지급");
         ItemStack wing = new ItemStack(Material.ELYTRA);
         ItemMeta meta3 = wing.getItemMeta();
-        Objects.requireNonNull(meta3).setDisplayName("§7§l글라이더§r의 §0망가진 §7§l날개");
+        meta3.setDisplayName("§7§l글라이더§r의 §0망가진 §7§l날개");
         Damageable damageable = (Damageable) meta3;
         damageable.setDamage(402);
         wing.setItemMeta(meta3);
         Glider.addStartingItem(wing);
 
-        HumanJob Afraid = new HumanJob("겁쟁이");
+        HumanJob Afraid = new HumanJob("겁쟁이", "체력이 5칸 이하일 경우 이동속도가 1.5배 증가합니다");
 
         humanJobs.add(Miner);
         humanJobs.add(Doctor);
@@ -98,13 +98,13 @@ public class GameManager implements Listener {
     }
 
     private void ZombieJobSetUp() {
-        ZombieJob Tank = new ZombieJob("탱커좀비");
-        ZombieJob Husk = new ZombieJob("사막좀비");
-        ZombieJob Spider = new ZombieJob("거미좀비");
-        ZombieJob Grab = new ZombieJob("그랩좀비");
+        ZombieJob Tank = new ZombieJob("탱커좀비", "체력이 2줄이다.");
+        ZombieJob Husk = new ZombieJob("사막좀비", "아침에 받는 디버프를 받지 않습니다");
+        ZombieJob Spider = new ZombieJob("거미좀비", "낙댐을 받지 않고 이속 버프를 받습니다 단 아침에 나약함 5를 받습니다");
+        ZombieJob Grab = new ZombieJob("그랩좀비", "투사체를 날리고 맞출경우 끌어당깁니다");
         ItemStack graping = new ItemStack(Material.EMERALD);
         ItemMeta meta = graping.getItemMeta();
-        Objects.requireNonNull(meta).setDisplayName("§6§l그랩");
+        meta.setDisplayName("§6§l그랩");
         graping.setItemMeta(meta);
         Grab.addStartingItem(graping);
         zombieJobs.add(Tank);
@@ -140,10 +140,14 @@ public class GameManager implements Listener {
                 sideManager.removePlayerFromTeam(player, "zombie");
                 player.sendMessage(ChatColor.RED + "게임 종료로 인해 좀비 팀에서 제거되었습니다.");
             }
-            player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).getDefaultValue());
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
             player.setFoodLevel(20);
             player.setGameMode(GameMode.SURVIVAL);
         }
+    }
+
+    public Map<Player, Integer> getBurningStack() {
+        return burningStack;
     }
 
     private void updateTeams() {
@@ -244,8 +248,11 @@ public class GameManager implements Listener {
                         if (player.getWorld().getTime() < 12300 || player.getWorld().getTime() > 23850) {
                             if (player.getLocation().getBlock().getLightFromSky() >= 13) {
                                 if (timeManager.IsDay()){
-                                    if (!Objects.equals(job.getJob(), "거미좀비")) {
-                                        player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 4));
+                                    for (Player player1 : Bukkit.getOnlinePlayers()) {
+                                        ZombieJob job1 = zombieJobManager.getPlayerJob(player);
+                                        if ((job != null || job.getJob().equals("거미좀비"))) {
+                                            player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 4));
+                                        }
                                     }
                                 }
                                 int stack = burningStack.getOrDefault(player, 0) + 1;
@@ -277,7 +284,7 @@ public class GameManager implements Listener {
             if (job != null && job.getJob() != null) {
                 if (job.getJob().equals("겁쟁이")) {
                     if (player.getHealth() <= 10) {
-                        Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED)).setBaseValue(0.15);
+                        player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.15);
                         player.sendMessage("§c무서워!!!!!!!!!! 도망가 !!!!!!!!");
                     }
                 }
@@ -292,7 +299,7 @@ public class GameManager implements Listener {
             HumanJob job = humanJobManager.getPlayerJob(player);
             if ((job != null && job.getJob().equals("겁쟁이"))){
                 if (player.getHealth() >= 10){
-                    Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED)).setBaseValue(0.1);
+                    player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.1);
                 }
             }
         }
@@ -312,7 +319,6 @@ public class GameManager implements Listener {
     public void onPlayerChat(AsyncPlayerChatEvent e) {
         if (gamePlaying){
             e.setCancelled(true);
-            e.getPlayer().sendMessage(ChatColor.RED + "게임이 진행중 일때는 채팅을 칠 수 없습니다.");
         }
     }
 }

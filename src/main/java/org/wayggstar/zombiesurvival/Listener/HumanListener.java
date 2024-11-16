@@ -5,14 +5,18 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.wayggstar.zombiesurvival.GameManager;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
 public class HumanListener implements Listener {
 
+    private final GameManager gameManager;
     private final SideManager sideManager;
 
-    public HumanListener() {
+    public HumanListener(GameManager gameManager) {
+        this.gameManager = gameManager;
         this.sideManager = new SideManager();
     }
 

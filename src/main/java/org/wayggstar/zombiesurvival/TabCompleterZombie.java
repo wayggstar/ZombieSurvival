@@ -23,6 +23,7 @@ public class TabCompleterZombie implements org.bukkit.command.TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> completions = new ArrayList<>();
+
         if (command.getName().equalsIgnoreCase("특수좀비")) {
             if (args.length == 1) {
                 completions = zombieJobManager.getAvailableJobs().stream()
