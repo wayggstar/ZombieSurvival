@@ -25,7 +25,7 @@ public class HumanListener implements Listener {
     private HumanList humanList;
 
     public HumanListener(GameManager gameManager, HumanList humanList) {
-        if (plugin == null || humanList == null) {
+        if (gameManager == null || humanList == null) {
             throw new IllegalArgumentException("Plugin and HumanList must not be null!");
         }
         this.gameManager = gameManager;

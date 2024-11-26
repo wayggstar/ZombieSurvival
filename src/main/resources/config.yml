@@ -1,7 +1,7 @@
 humans:
-  - "null"
+  - "wayggstar"
 
 mapsize:
-  X:
-  Y:
-  Z:
+  X: 3000
+  Y: 200
+  Z: 3000
