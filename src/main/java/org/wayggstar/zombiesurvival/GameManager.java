@@ -271,6 +271,7 @@ public class GameManager implements Listener {
                                 if (timeManager.IsDay()) {
                                     if (job != null && job.getJob().equals("거미좀비")) {
                                         player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 2));
+                                        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 0, 0));
 
                                     }
                                 }
@@ -279,7 +280,7 @@ public class GameManager implements Listener {
                                 if (stack >= 10) {
                                     burningStack.put(player, 0);
                                     player.damage(2.0);
-                                    player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 4));
+                                    player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 0));
                                 }
                             }
                         } else {
