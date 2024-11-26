@@ -1,2 +1,7 @@
 humans:
   - "null"
+
+mapsize:
+  X:
+  Y:
+  Z:

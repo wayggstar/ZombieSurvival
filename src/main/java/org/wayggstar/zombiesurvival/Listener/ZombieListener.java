@@ -163,6 +163,14 @@ public class ZombieListener implements Listener {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 용암을 사용할 수 없습니다.");
             }
+            if (e.getItem() != null && e.getItem().getType() == Material.BUCKET) {
+                if (e.getClickedBlock().getType() == Material.LAVA){
+                    e.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + "양동이가 녹았다!!");
+                    ItemStack eventitem = player.getItemInHand();
+                    player.getInventory().remove(eventitem);
+                }
+            }
         }
     }
 
@@ -250,4 +258,6 @@ public class ZombieListener implements Listener {
         player.getInventory().addItem(compass);
         player.sendMessage("나침반이 " + target.getName() + "의 위치를 가리키도록 설정되었습니다.");
     }
+
+
 }

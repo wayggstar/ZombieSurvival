@@ -29,12 +29,13 @@ import org.wayggstar.zombiesurvival.util.GameUtils;
 
 import java.util.*;
 
-import static org.bukkit.Bukkit.getServer;
+import static org.bukkit.Bukkit.*;
 
 public class GameManager implements Listener {
 
     private HumanJobManager humanJobManager;
     private ZombieJobManager zombieJobManager;
+    private final ZombieSurvival zombieSurvival;
     private final JavaPlugin plugin;
     private final SideManager sideManager;
     private final HumanList humanList;
@@ -44,19 +45,21 @@ public class GameManager implements Listener {
     private final Map<Player, Integer> burningStack = new HashMap<>();
     private List<HumanJob> humanJobs = new ArrayList<>();
     private List<ZombieJob> zombieJobs = new ArrayList<>();
+    private final Random random = new Random();
+    private int survivor;
 
-    public GameManager(JavaPlugin plugin, SideManager sideManager, HumanList humanList) {
+    public GameManager(JavaPlugin plugin, SideManager sideManager, HumanList humanList, ZombieSurvival zombieSurvival) {
         this.plugin = plugin;
         this.sideManager = sideManager;
         this.humanList = humanList;
-        this.timeManager = new TimeManager(plugin);
+        this.timeManager = new TimeManager(plugin, this);
         HumanJobSetUp();
         ZombieJobSetUp();
         this.humanJobManager = new HumanJobManager(humanJobs);
         this.zombieJobManager = new ZombieJobManager(zombieJobs);
+        this.zombieSurvival = zombieSurvival;
         initActionBarDisplay();
         initBurningEffect();
-        SpiderPenalty();
         ZombieNightBuff();
     }
 
@@ -150,11 +153,20 @@ public class GameManager implements Listener {
         return burningStack;
     }
 
+
+
     private void updateTeams() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!humanList.isHuman(player)) {
+                Location random = zombieSurvival.getRandomSafeLocation(player);
+                player.teleport(random);
                 sideManager.addPlayerToTeam(player, "zombie");
                 player.sendMessage(ChatColor.RED + "당신은 좀비 팀에 추가되었습니다.");
+            } else {
+                int Y = player.getWorld().getHighestBlockYAt(0,0);
+                Location zero = new Location(player.getWorld(), 0, Y, 0);
+                player.teleport(zero);
+                player.sendMessage(ChatColor.GREEN + "당신은 인간입니다.");
             }
         }
     }
@@ -208,12 +220,20 @@ public class GameManager implements Listener {
                 if (!gamePlaying) return;
                 World world = Bukkit.getWorld("world");
                 if (world == null) return;
-
-                int survives = humanList.getSurvivorCount(sideManager);
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    survivor = 0;
+                    if (!sideManager.isPlayerTeam(player.getName(), "zombie")) {
+                        survivor += 1;
+                    }
+                }
+                if (survivor == 0){
+                    ZombieWinEndGame();
+                }
                 String formattedTime = GameUtils.convertTicksToTime(world.getTime());
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(
-                            gameDay + "일차 / 현재 시간: " + ChatColor.YELLOW + formattedTime + " / 생존자 수: " + ChatColor.GREEN + survives));
+                            gameDay + "일차 / 현재 시간: " + ChatColor.YELLOW + formattedTime + " / 생존자 수: " + ChatColor.GREEN + survivor));
+
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L);
@@ -226,7 +246,7 @@ public class GameManager implements Listener {
                     if (!sideManager.isPlayerTeam(player.getName(), "zombie")){
                         if (!timeManager.IsDay()){
                             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 40, 1));
-                            player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 100, 1));
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 200, 1));
 
                         } else{
                             player.removePotionEffect(PotionEffectType.NIGHT_VISION);
@@ -244,15 +264,14 @@ public class GameManager implements Listener {
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     ZombieJob job = zombieJobManager.getPlayerJob(player);
-                    if (sideManager.isPlayerTeam(player.getName(), "zombie") && (job == null || !job.getJob().equals("사막좀비"))) {
+                    if (sideManager.isPlayerTeam(player.getName(), "zombie") &&
+                            (job == null || !job.getJob().equals("사막좀비"))) {
                         if (player.getWorld().getTime() < 12300 || player.getWorld().getTime() > 23850) {
                             if (player.getLocation().getBlock().getLightFromSky() >= 13) {
-                                if (timeManager.IsDay()){
-                                    for (Player player1 : Bukkit.getOnlinePlayers()) {
-                                        ZombieJob job1 = zombieJobManager.getPlayerJob(player);
-                                        if ((job != null || job.getJob().equals("거미좀비"))) {
-                                            player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 4));
-                                        }
+                                if (timeManager.IsDay()) {
+                                    if (job != null && job.getJob().equals("거미좀비")) {
+                                        player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 2));
+
                                     }
                                 }
                                 int stack = burningStack.getOrDefault(player, 0) + 1;
@@ -272,10 +291,6 @@ public class GameManager implements Listener {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    public void SpiderPenalty(){
-
-    }
-
     @EventHandler
     public void onAfraidgetDamage(EntityDamageEvent e){
         if (e.getEntity() instanceof Player) {
@@ -291,6 +306,8 @@ public class GameManager implements Listener {
             }
         }
     }
+
+
 
     @EventHandler
     public void onHeal(EntityRegainHealthEvent e){
@@ -319,6 +336,49 @@ public class GameManager implements Listener {
     public void onPlayerChat(AsyncPlayerChatEvent e) {
         if (gamePlaying){
             e.setCancelled(true);
+        }
+    }
+
+
+    public void HumanWinEndGame() {
+        zombieJobManager.resetJobs();
+        humanJobManager.resetJobs();
+        if (!gamePlaying) return;
+        gamePlaying = false;
+        gameDay = 0;
+        World world = Bukkit.getWorld("world");
+        if (world != null) world.setTime(0);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+                sideManager.removePlayerFromTeam(player, "zombie");
+                player.damage(10000);
+                player.sendMessage(ChatColor.RED + "인간이 생존했습니다.........");
+            }
+            player.sendTitle("§a인간이 생존에 성공했습니다!", " ", 5, 40, 5);
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
+            player.setFoodLevel(20);
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+    }
+
+    public void ZombieWinEndGame() {
+        zombieJobManager.resetJobs();
+        humanJobManager.resetJobs();
+        if (!gamePlaying) return;
+        gamePlaying = false;
+        gameDay = 0;
+        World world = Bukkit.getWorld("world");
+        if (world != null) world.setTime(0);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+                sideManager.removePlayerFromTeam(player, "zombie");
+                player.sendMessage(ChatColor.RED + "좀비의 승리입니다");
+            }
+            player.sendTitle("§c모든 인간이 죽었습니다........", " ", 5, 40, 5);
+
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
+            player.setFoodLevel(20);
+            player.setGameMode(GameMode.SURVIVAL);
         }
     }
 }

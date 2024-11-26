@@ -11,11 +11,13 @@ public class TimeManager {
     private boolean isDay = true;
     private boolean morningMessageSent = false;
     private boolean nightMessageSent = false;
+    private final GameManager gameManager;
     private int gameDay = 0;
     private final JavaPlugin plugin;
 
-    public TimeManager(JavaPlugin plugin) {
+    public TimeManager(JavaPlugin plugin, GameManager gameManager) {
         this.plugin = plugin;
+        this.gameManager = gameManager;
     }
 
     public void resetDayCycle() {
@@ -38,6 +40,9 @@ public class TimeManager {
                         nightMessageSent = false;
                         broadcastMessage(ChatColor.GREEN + "새로운 날이 시작되었습니다! 오늘은 " + gameDay + "일째입니다.");
                         gameDay++;
+                        if (gameDay == 6){
+                            gameManager.HumanWinEndGame();
+                        }
                     }
                 }
                 else if (time >= 13000 && time < 14000) {

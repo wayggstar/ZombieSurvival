@@ -4,6 +4,7 @@ import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.wayggstar.zombiesurvival.Jobs.Human.HumanJob;
@@ -14,6 +15,8 @@ import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJobManager;
 import org.wayggstar.zombiesurvival.Listener.HumanListener;
 import org.wayggstar.zombiesurvival.Listener.ZombieListener;
 import org.wayggstar.zombiesurvival.Team.SideManager;
+
+import java.util.Random;
 
 
 public final class ZombieSurvival extends JavaPlugin implements CommandExecutor {
@@ -28,6 +31,10 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     private ZombieJobManager zombieJobManager;
     private HumanJob humanJob;
     private HumanJobManager humanJobManager;
+    private final Random random = new Random();
+    private int maxX;
+    private int maxY;
+    private int maxZ;
 
     @Override
     public void onEnable() {
@@ -37,13 +44,16 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
 
         getLogger().info(ChatColor.GREEN + "좀비 서바이벌 플러그인 활성화");
 
-        if (!getDataFolder().exists()) getDataFolder().mkdirs();
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdirs();
+        }
         saveDefaultConfig();
 
         humanList = new HumanList(this);
-        gameManager = new GameManager(this, sideManager, humanList);
+
+        gameManager = new GameManager(this, sideManager, humanList, this);
         zombieListener = new ZombieListener(sideManager, this);
-        humanListener = new HumanListener(gameManager);
+        humanListener = new HumanListener(gameManager, humanList);
         jobAbility = new JobAbility(sideManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(zombieListener, this);
@@ -142,4 +152,41 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         }
         return false;
     }
+
+    @Override
+    public void onDisable() {
+        if (humanList != null) {
+            humanList.save();
+        }
+        getLogger().info("좀비서바이벌 비활성화");
+    }
+
+    public HumanList getHumanList() {
+        return humanList;
+    }
+    private void loadConfigValues() {
+        FileConfiguration config = getConfig();
+        maxX = config.getInt("mapsize.X", 3000); // mapsize.X 기본값: 1000
+        maxY = config.getInt("mapsize.Y", 256);  // mapsize.Y 기본값: 256
+        maxZ = config.getInt("mapsize.Z", 3000); // mapsize.Z 기본값: 1000
+    }
+
+    public Location getRandomSafeLocation(Player player) {
+        for (int attempts = 0; attempts < 10; attempts++) { // 최대 10번 시도
+            int x = random.nextInt(maxX * 2) - maxX; // -maxX ~ +maxX
+            int z = random.nextInt(maxZ * 2) - maxZ; // -maxZ ~ +maxZ
+            int y = player.getWorld().getHighestBlockYAt(x, z); // 땅 위의 Y 좌표
+
+            if (y <= 0 || y >= maxY) continue; // Y가 비정상적이면 무시
+
+            Location location = new Location(player.getWorld(), x + 0.5, y, z + 0.5);
+            Material blockType = player.getWorld().getBlockAt(location).getType();
+
+            if (blockType != Material.WATER && blockType != Material.LAVA) {
+                return location;
+            }
+        }
+        return null; // 안전한 위치를 찾지 못함
+    }
+
 }

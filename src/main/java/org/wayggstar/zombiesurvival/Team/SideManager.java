@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SideManager {
-    private Map<String, Side> sides;
+
+    private final Map<String, Side> sides;
 
     public SideManager() {
         sides = new HashMap<>();

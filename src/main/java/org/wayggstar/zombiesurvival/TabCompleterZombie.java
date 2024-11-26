@@ -26,16 +26,20 @@ public class TabCompleterZombie implements org.bukkit.command.TabCompleter {
 
         if (command.getName().equalsIgnoreCase("특수좀비")) {
             if (args.length == 1) {
-                completions = zombieJobManager.getAvailableJobs().stream()
-                        .map(ZombieJob::getJob)
-                        .filter(job -> job.toLowerCase().startsWith(args[0].toLowerCase()))
-                        .collect(Collectors.toList());
-            } else if (args.length == 2) {
-                completions = Bukkit.getOnlinePlayers().stream()
-                        .map(Player::getName)
-                        .filter(name -> !humanList.getPlayerNames().contains(name))
-                        .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
-                        .collect(Collectors.toList());
+                if (zombieJobManager.getAvailableJobs() != null) {
+                    completions = zombieJobManager.getAvailableJobs().stream()
+                            .map(ZombieJob::getJob)
+                            .filter(job -> job.toLowerCase().startsWith(args[0].toLowerCase()))
+                            .collect(Collectors.toList());
+                }
+            }         else if (args.length == 2) {
+                if (humanList.getPlayerNames() != null) {
+                    completions = Bukkit.getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .filter(name -> !humanList.getPlayerNames().contains(name))
+                            .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                            .collect(Collectors.toList());
+                }
             }
         }
 
