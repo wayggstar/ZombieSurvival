@@ -24,14 +24,14 @@ public class HumanListener implements Listener {
     private JavaPlugin plugin;
     private HumanList humanList;
 
-    public HumanListener(GameManager gameManager, HumanList humanList) {
+    public HumanListener(GameManager gameManager, HumanList humanList, ZombieJobManager zombieJobManager) {
         if (gameManager == null || humanList == null) {
             throw new IllegalArgumentException("Plugin and HumanList must not be null!");
         }
         this.gameManager = gameManager;
         this.sideManager = new SideManager();
         this.humanList = humanList;
-        this.zombieJobManager = new ZombieJobManager(zombieJobManager.getAvailableJobs());
+        this.zombieJobManager = zombieJobManager;
         this.random = new Random();
     }
 

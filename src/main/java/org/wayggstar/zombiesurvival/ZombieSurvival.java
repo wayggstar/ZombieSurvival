@@ -53,7 +53,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
 
         gameManager = new GameManager(this, sideManager, humanList, this);
         zombieListener = new ZombieListener(sideManager, this);
-        humanListener = new HumanListener(gameManager, humanList);
+        humanListener = new HumanListener(gameManager, humanList, zombieJobManager);
         jobAbility = new JobAbility(sideManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(zombieListener, this);
