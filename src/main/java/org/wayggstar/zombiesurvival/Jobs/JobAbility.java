@@ -9,7 +9,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -42,7 +45,7 @@ public class JobAbility implements Listener {
                 if (event.getPlayer().getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals("§a§l의사§r의 §4§l치료키트")) {
                     if (cooldown.isCooldown(player, skillName, 40)) {
                         long remainingTime = cooldown.getRemainingCooldown(player, skillName, 40);
-                        player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§r초 남았습니다.");
+                        player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§a초 남았습니다.");
                         return;
                     }
                     double myhealth = Math.min(player.getHealth() + 6.0, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
@@ -116,5 +119,14 @@ public class JobAbility implements Listener {
         Location targetLocation = target.getLocation();
         Vector pullDirection = playerLocation.toVector().subtract(targetLocation.toVector()).normalize();
         target.setVelocity(pullDirection.multiply(1.5));
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        PlayerInventory inventory = player.getInventory();
+        event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§a§l의사§r의 §4§l치료키트"));
+        event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§6§l광부§r의 §7§l곡괭이"));
+        event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§7§l글라이더§r의 §0망가진 §7§l날개"));
     }
 }

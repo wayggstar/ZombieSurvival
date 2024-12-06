@@ -33,7 +33,7 @@ public class TabCompleterZombie implements org.bukkit.command.TabCompleter {
                             .collect(Collectors.toList());
                 }
             }         else if (args.length == 2) {
-                if (humanList.getPlayerNames() != null) {
+                if (humanList.getPlayerNames() != null && !humanList.getPlayerNames().isEmpty()) {
                     completions = Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
                             .filter(name -> !humanList.getPlayerNames().contains(name))

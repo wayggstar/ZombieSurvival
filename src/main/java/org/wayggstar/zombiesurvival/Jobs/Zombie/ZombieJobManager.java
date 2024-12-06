@@ -36,17 +36,28 @@ public class ZombieJobManager {
     }
 
     public ZombieJob assignSpecificJob(Player player, ZombieJob job) {
-        if (!playerJobs.containsKey(player)) {
-            playerJobs.put(player, job);
-            player.sendMessage(ChatColor.DARK_GREEN + "축하합니다! 당신은 특수좀비 '" + job.getJob() + ChatColor.DARK_GREEN + "'이/가 되었습니다");
-            return job;
-        } else {
+        if (player == null) {
+            System.out.println("assignSpecificJob: player가 null입니다.");
+            return null;
+        }
+        if (job == null) {
+            player.sendMessage(ChatColor.RED + "할당하려는 직업이 null입니다.");
+            return null;
+        }
+
+        // 이미 직업이 할당된 경우
+        if (playerJobs.containsKey(player)) {
             player.sendMessage(ChatColor.RED + "이미 좀비 직업이 할당되었습니다!");
             return null;
         }
+
+        // 직업 할당
+        playerJobs.put(player, job);
+        player.sendMessage(ChatColor.DARK_GREEN + "축하합니다! 당신은 특수좀비 '" + job.getJob() + ChatColor.DARK_GREEN + "'이/가 되었습니다.");
+        return job;
     }
 
-    private ZombieJob getRandomJob(){
+    public ZombieJob getRandomJob(){
         int index = random.nextInt(availableJobs.size());
         return availableJobs.get(index);
     }

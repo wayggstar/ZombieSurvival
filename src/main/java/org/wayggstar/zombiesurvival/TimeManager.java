@@ -38,8 +38,8 @@ public class TimeManager {
                         isDay = true;
                         morningMessageSent = true;
                         nightMessageSent = false;
-                        broadcastMessage(ChatColor.GREEN + "새로운 날이 시작되었습니다! 오늘은 " + gameDay + "일째입니다.");
                         gameDay++;
+                        broadcastMessage(ChatColor.GREEN + "새로운 날이 시작되었습니다! 오늘은 " + gameDay + "일째입니다.");
                         if (gameDay == 6){
                             gameManager.HumanWinEndGame();
                         }

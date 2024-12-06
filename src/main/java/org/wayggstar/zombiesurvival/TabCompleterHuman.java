@@ -26,14 +26,15 @@ public class TabCompleterHuman implements TabCompleter {
         List<String> suggestions = new ArrayList<>();
         if (command.getName().equalsIgnoreCase("직업확정")) {
             if (args.length == 1) {
-                suggestions.addAll(humanJobManager.getJobNames());
+                for (int i = 0; i < humanJobManager.getAvailableJobs().size(); i++) {
+                    suggestions.add(humanJobManager.getAvailableJobs().get(i).toString());
+                }
             } else if (args.length == 2) {
                 for (Player player : sender.getServer().getOnlinePlayers()) {
                     suggestions.addAll(humanList.getPlayerNames());
                 }
             }
         }
-
         return suggestions;
     }
 }

@@ -12,7 +12,6 @@ import org.wayggstar.zombiesurvival.Jobs.Human.HumanJobManager;
 import org.wayggstar.zombiesurvival.Jobs.JobAbility;
 import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJob;
 import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJobManager;
-import org.wayggstar.zombiesurvival.Listener.HumanListener;
 import org.wayggstar.zombiesurvival.Listener.ZombieListener;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
@@ -25,7 +24,6 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     private HumanList humanList;
     private SideManager sideManager;
     private ZombieListener zombieListener;
-    private HumanListener humanListener;
     private JobAbility jobAbility;
     private ZombieJob zombieJob;
     private ZombieJobManager zombieJobManager;
@@ -38,6 +36,8 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
 
     @Override
     public void onEnable() {
+        loadConfigValues();
+
         sideManager = new SideManager();
         sideManager.createTeam("zombie");
         sideManager.createTeam("DIE");
@@ -53,12 +53,10 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
 
         gameManager = new GameManager(this, sideManager, humanList, this);
         zombieListener = new ZombieListener(sideManager, this);
-        humanListener = new HumanListener(gameManager, humanList, zombieJobManager);
         jobAbility = new JobAbility(sideManager, this);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(zombieListener, this);
         getServer().getPluginManager().registerEvents(jobAbility, this);
-        getServer().getPluginManager().registerEvents(humanListener, this);
 
         System.out.println(humanList.getPlayerNames().toString());
 
@@ -67,6 +65,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         getCommand("게임종료").setExecutor(this);
         getCommand("특수좀비").setTabCompleter(new TabCompleterZombie(zombieJobManager, humanList));
         getCommand("직업확정").setTabCompleter(new TabCompleterHuman(humanJobManager, humanList));
+        getCommand("스폰지정");
     }
 
     @Override
@@ -86,6 +85,10 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         if (cmd.getName().equalsIgnoreCase("게임종료")) {
             gameManager.endGame();
             return true;
+        }
+        if (cmd.getName().equalsIgnoreCase("스폰지점")){
+            Location humanspawn = ((Player) sender).getLocation();
+            gameManager.humansetspawn = humanspawn;
         }
         if (cmd.getName().equalsIgnoreCase("특수좀비")) {
             if (args.length != 2) {
@@ -166,18 +169,18 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     }
     private void loadConfigValues() {
         FileConfiguration config = getConfig();
-        maxX = config.getInt("mapsize.X", 3000); // mapsize.X 기본값: 1000
-        maxY = config.getInt("mapsize.Y", 256);  // mapsize.Y 기본값: 256
-        maxZ = config.getInt("mapsize.Z", 3000); // mapsize.Z 기본값: 1000
+        maxX = config.getInt("mapsize.X", 3000);
+        maxY = config.getInt("mapsize.Y", 256);
+        maxZ = config.getInt("mapsize.Z", 3000);
     }
 
     public Location getRandomSafeLocation(Player player) {
-        for (int attempts = 0; attempts < 10; attempts++) { // 최대 10번 시도
-            int x = random.nextInt(maxX * 2) - maxX; // -maxX ~ +maxX
-            int z = random.nextInt(maxZ * 2) - maxZ; // -maxZ ~ +maxZ
-            int y = player.getWorld().getHighestBlockYAt(x, z); // 땅 위의 Y 좌표
+        for (int attempts = 0; attempts < 10; attempts++) {
+            int x = random.nextInt(maxX * 2) - maxX;
+            int z = random.nextInt(maxZ * 2) - maxZ;
+            int y = player.getWorld().getHighestBlockYAt(x, z);
 
-            if (y <= 0 || y >= maxY) continue; // Y가 비정상적이면 무시
+            if (y <= 0 || y >= maxY) continue;
 
             Location location = new Location(player.getWorld(), x + 0.5, y, z + 0.5);
             Material blockType = player.getWorld().getBlockAt(location).getType();
@@ -186,7 +189,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
                 return location;
             }
         }
-        return null; // 안전한 위치를 찾지 못함
+        return null;
     }
 
 }

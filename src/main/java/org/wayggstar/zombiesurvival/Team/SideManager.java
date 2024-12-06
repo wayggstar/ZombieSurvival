@@ -1,6 +1,11 @@
 package org.wayggstar.zombiesurvival.Team;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.Team;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +21,7 @@ public class SideManager {
         if (!sides.containsKey(name)) {
             Side team = new Side(name);
             sides.put(name, team);
+
             return team;
         }
         return null;
