@@ -11,6 +11,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
@@ -40,32 +41,36 @@ public class JobAbility implements Listener {
         int PARTICLE_COUNT = 10;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-            Player player = event.getPlayer();
-            if (!sideManager.isPlayerTeam(player.getName(), "zombie")){
-                if (event.getPlayer().getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals("§a§l의사§r의 §4§l치료키트")) {
-                    if (cooldown.isCooldown(player, skillName, 40)) {
-                        long remainingTime = cooldown.getRemainingCooldown(player, skillName, 40);
-                        player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§a초 남았습니다.");
+            if (event.getHand() != EquipmentSlot.OFF_HAND) {
+                Player player = event.getPlayer();
+                if (!sideManager.isPlayerTeam(player.getName(), "zombie")) {
+                    if (event.getPlayer().getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals("§a§l의사§r의 §4§l치료키트")) {
+                        if (cooldown.isCooldown(player, skillName, 40)) {
+                            long remainingTime = cooldown.getRemainingCooldown(player, skillName, 40);
+                            player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§a초 남았습니다.");
+                            return;
+                        }
+                        double myhealth = Math.min(player.getHealth() + 6.0, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                        player.setHealth(myhealth);
+                        player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1, 0), PARTICLE_COUNT);
+                        player.sendMessage(ChatColor.GREEN + "자신을 치유했습니다. (체력 3칸 회복)");
+                        for (Entity entity : player.getNearbyEntities(3, 3, 3)) {
+                            if (entity instanceof Player) {
+                                Player target = (Player) entity;
+                                if (sideManager.isPlayerTeam(target.getName(), "zombie")) {
+                                    return;
+                                }
+                                double heal = 6.0;
+                                double newHealth = Math.min(target.getHealth() + heal, target.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                                target.setHealth(newHealth);
+                                target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 2, 0), PARTICLE_COUNT);
+                                target.sendMessage(ChatColor.GREEN + "의사에게 치유받았습니다. (체력 3칸 회복)");
+                            }
+                        }
+                        cooldown.activateCooldown(player, skillName);
+                    } else {
                         return;
                     }
-                    double myhealth = Math.min(player.getHealth() + 6.0, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-                    player.setHealth(myhealth);
-                    player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1, 0), PARTICLE_COUNT);
-                    player.sendMessage(ChatColor.GREEN + "자신을 치유했습니다. (체력 3칸 회복)");
-                    for (Entity entity : player.getNearbyEntities(3, 3, 3)) {
-                        if (entity instanceof Player) {
-                            Player target = (Player) entity;
-                            if (sideManager.isPlayerTeam(target.getName(), "zombie")) {
-                                return;
-                            }
-                            double heal = 6.0;
-                            double newHealth = Math.min(target.getHealth() + heal, target.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-                            target.setHealth(newHealth);
-                            target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 2, 0), PARTICLE_COUNT);
-                            target.sendMessage(ChatColor.GREEN + "의사에게 치유받았습니다. (체력 3칸 회복)");
-                        }
-                    }
-                    cooldown.activateCooldown(player, skillName);
                 }
             }
         }

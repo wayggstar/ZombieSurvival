@@ -5,7 +5,11 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.wayggstar.zombiesurvival.Jobs.Human.HumanJob;
 import org.wayggstar.zombiesurvival.Jobs.Human.HumanJobManager;
@@ -15,6 +19,8 @@ import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJobManager;
 import org.wayggstar.zombiesurvival.Listener.ZombieListener;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 
@@ -29,6 +35,8 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     private ZombieJobManager zombieJobManager;
     private HumanJob humanJob;
     private HumanJobManager humanJobManager;
+    private List<ZombieJob> zombieJobs = new ArrayList<>();
+    private List<HumanJob> humanJobs = new ArrayList<>();
     private final Random random = new Random();
     private int maxX;
     private int maxY;
@@ -50,10 +58,11 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         saveDefaultConfig();
 
         humanList = new HumanList(this);
-
         gameManager = new GameManager(this, sideManager, humanList, this);
         zombieListener = new ZombieListener(sideManager, this);
         jobAbility = new JobAbility(sideManager, this);
+        zombieJobManager = new ZombieJobManager(gameManager.zombieJobs);
+        humanJobManager = new HumanJobManager(gameManager.humanJobs);
         getServer().getPluginManager().registerEvents(gameManager, this);
         getServer().getPluginManager().registerEvents(zombieListener, this);
         getServer().getPluginManager().registerEvents(jobAbility, this);
@@ -66,6 +75,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         getCommand("특수좀비").setTabCompleter(new TabCompleterZombie(zombieJobManager, humanList));
         getCommand("직업확정").setTabCompleter(new TabCompleterHuman(humanJobManager, humanList));
         getCommand("스폰지정");
+
     }
 
     @Override
@@ -89,6 +99,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         if (cmd.getName().equalsIgnoreCase("스폰지점")){
             Location humanspawn = ((Player) sender).getLocation();
             gameManager.humansetspawn = humanspawn;
+            createWorldBorder(humanspawn);
         }
         if (cmd.getName().equalsIgnoreCase("특수좀비")) {
             if (args.length != 2) {
@@ -156,6 +167,21 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         return false;
     }
 
+    private void createWorldBorder(Location spawnLocation) {
+        World world = spawnLocation.getWorld();
+
+        if (world == null) {
+            getLogger().warning("월드가 존재하지 않습니다.");
+            return;
+        }
+        world.getWorldBorder().setCenter(spawnLocation);
+        double size = 3000;
+        world.getWorldBorder().setSize(size);
+        world.getWorldBorder().setWarningDistance(10);
+        world.getWorldBorder().setWarningTime(15);
+        getLogger().info("월드 보더가 설정되었습니다: " + spawnLocation.toString());
+    }
+
     @Override
     public void onDisable() {
         if (humanList != null) {
@@ -191,5 +217,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         }
         return null;
     }
+
+
 
 }

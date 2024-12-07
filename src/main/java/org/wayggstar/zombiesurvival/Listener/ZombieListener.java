@@ -5,6 +5,7 @@ import armorequip.armorequip.ArmorEquipEvent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -12,6 +13,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -118,15 +120,19 @@ public class ZombieListener implements Listener {
     }
 
     @EventHandler
-    public void InteractChestZombie(PlayerInteractEvent e){
+    public void InteractChestZombie(PlayerInteractEvent e, PlayerInteractEntityEvent e2){
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
             if (e.getClickedBlock() == null) {
                 return;
             }
-            if (e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.CHEST_MINECART || e.getClickedBlock().getType() == Material.TRAPPED_CHEST) {
+            if (e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.TRAPPED_CHEST) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 상자를 사용할 수 없습니다.");
+            }
+            if (e2.getRightClicked().getType() == EntityType.MINECART_CHEST) {
+                e.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "좀비는 상자카트를 사용할 수 없습니다.");
             }
         }
     }
@@ -156,19 +162,27 @@ public class ZombieListener implements Listener {
     }
 
     @EventHandler
-    public void LavaZombie(PlayerInteractEvent e){
+    public void LavaZombie(PlayerInteractEvent e) {
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
-            if (e.getItem() != null && e.getItem().getType() == Material.LAVA_BUCKET) {
-                e.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "좀비는 용암을 사용할 수 없습니다.");
-            }
-            if (e.getItem() != null && e.getItem().getType() == Material.BUCKET) {
-                if (e.getClickedBlock().getType() == Material.LAVA){
+            ItemStack item = e.getItem();
+            if (item != null) {
+                if (item.getType() == Material.LAVA_BUCKET) {
                     e.setCancelled(true);
-                    player.sendMessage(ChatColor.RED + "양동이가 녹았다!!");
-                    ItemStack eventitem = player.getItemInHand();
-                    player.getInventory().remove(eventitem);
+                    player.sendMessage(ChatColor.RED + "좀비는 용암을 사용할 수 없습니다.");
+                    return;
+                }
+                if (item.getType() == Material.BUCKET && e.getClickedBlock() != null) {
+                    if (e.getClickedBlock().getType() == Material.LAVA) {
+                        e.setCancelled(true);
+                        player.sendMessage(ChatColor.RED + "양동이가 녹았다!!");
+                        if (item.getAmount() > 1) {
+                            item.setAmount(item.getAmount() - 1);
+                        } else {
+                            player.getInventory().remove(item);
+                        }
+                        player.updateInventory();
+                    }
                 }
             }
         }
@@ -259,5 +273,12 @@ public class ZombieListener implements Listener {
         player.sendMessage("나침반이 " + target.getName() + "의 위치를 가리키도록 설정되었습니다.");
     }
 
+    @EventHandler
+    public void onHopperMinecart(InventoryMoveItemEvent e) {
+        if (e.getDestination().getHolder() instanceof HopperMinecart) {
+            e.setCancelled(true);
+            ((HopperMinecart) e.getDestination().getHolder()).remove();
+        }
+    }
 
 }
