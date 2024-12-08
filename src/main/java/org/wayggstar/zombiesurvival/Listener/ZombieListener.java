@@ -120,7 +120,7 @@ public class ZombieListener implements Listener {
     }
 
     @EventHandler
-    public void InteractChestZombie(PlayerInteractEvent e, PlayerInteractEntityEvent e2){
+    public void InteractChestZombie(PlayerInteractEvent e){
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
             if (e.getClickedBlock() == null) {
@@ -130,7 +130,16 @@ public class ZombieListener implements Listener {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 상자를 사용할 수 없습니다.");
             }
-            if (e2.getRightClicked().getType() == EntityType.MINECART_CHEST) {
+
+        }
+    }
+
+    @EventHandler
+    public void onChestCart(PlayerInteractEntityEvent e){
+        Player player = e.getPlayer();
+        if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+
+            if (e.getRightClicked().getType() == EntityType.MINECART_CHEST) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 상자카트를 사용할 수 없습니다.");
             }
@@ -208,14 +217,6 @@ public class ZombieListener implements Listener {
                 e.setCancelled(true);
                 player.setFoodLevel(19);
             }
-        }
-    }
-
-    @EventHandler
-    public void onZombieDeath(PlayerDeathEvent e){
-        Player player = (Player) e.getEntity();
-        if (sideManager.isPlayerTeam(player.getName(), "zombie")){
-            e.setDeathMessage("");
         }
     }
 

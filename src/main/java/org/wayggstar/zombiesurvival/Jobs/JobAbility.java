@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -23,17 +24,20 @@ import org.wayggstar.zombiesurvival.Jobs.Human.HumanJobManager;
 import org.wayggstar.zombiesurvival.Jobs.Zombie.ZombieJobManager;
 import org.wayggstar.zombiesurvival.Team.SideManager;
 
+import java.util.Objects;
+
 public class JobAbility implements Listener {
     private SideManager sideManager;
     private ZombieJobManager zombieJobManager;
-    private HumanJobManager humanJobManager;
+    private final HumanJobManager humanJobManager;
     private JavaPlugin plugin;
     private final Cooldown cooldown;
 
-    public JobAbility(SideManager sideManager, JavaPlugin plugin){
+    public JobAbility(SideManager sideManager, JavaPlugin plugin, HumanJobManager humanJobManager){
         this.sideManager = sideManager;
         this.cooldown = new Cooldown();
         this.plugin = plugin;
+        this.humanJobManager = humanJobManager;
     }
     @EventHandler
     public void onPlayerRightClick(PlayerInteractEvent event) {
@@ -44,7 +48,9 @@ public class JobAbility implements Listener {
             if (event.getHand() != EquipmentSlot.OFF_HAND) {
                 Player player = event.getPlayer();
                 if (!sideManager.isPlayerTeam(player.getName(), "zombie")) {
-                    if (event.getPlayer().getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals("§a§l의사§r의 §4§l치료키트")) {
+                    ItemStack itemInHand = player.getInventory().getItemInMainHand();
+                    if (itemInHand.getItemMeta().getDisplayName().equals("§a§l의사§r의 §4§l치료키트")) {
+
                         if (cooldown.isCooldown(player, skillName, 40)) {
                             long remainingTime = cooldown.getRemainingCooldown(player, skillName, 40);
                             player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§a초 남았습니다.");
@@ -52,8 +58,10 @@ public class JobAbility implements Listener {
                         }
                         double myhealth = Math.min(player.getHealth() + 6.0, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
                         player.setHealth(myhealth);
-                        player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1, 0), PARTICLE_COUNT);
+                        player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 3, 0), PARTICLE_COUNT);
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
                         player.sendMessage(ChatColor.GREEN + "자신을 치유했습니다. (체력 3칸 회복)");
+
                         for (Entity entity : player.getNearbyEntities(3, 3, 3)) {
                             if (entity instanceof Player) {
                                 Player target = (Player) entity;
@@ -63,67 +71,16 @@ public class JobAbility implements Listener {
                                 double heal = 6.0;
                                 double newHealth = Math.min(target.getHealth() + heal, target.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
                                 target.setHealth(newHealth);
-                                target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 2, 0), PARTICLE_COUNT);
+                                target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 3, 0), PARTICLE_COUNT);
+                                target.playSound(target.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
                                 target.sendMessage(ChatColor.GREEN + "의사에게 치유받았습니다. (체력 3칸 회복)");
                             }
                         }
                         cooldown.activateCooldown(player, skillName);
-                    } else {
-                        return;
                     }
                 }
             }
         }
-    }
-
-    @EventHandler
-    public void ZombieGrab(PlayerInteractEvent event) {
-        String skillName = "§6그랩§a";
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-            Player player = event.getPlayer();
-            if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
-                if (player.getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals("§6§l그랩")) {
-                    if (cooldown.isCooldown(player, skillName, 50)) {
-                        long remainingTime = cooldown.getRemainingCooldown(player, skillName, 50);
-                        player.sendMessage("§a스킬 '" + skillName + "'의 쿨타임이 " + ChatColor.RED + remainingTime + "§r초 남았습니다.");
-                        return;
-                    }
-                    grab(player);
-                }
-            }
-        }
-    }
-    public void grab(Player player) {
-        Location eyelocation = player.getEyeLocation();
-        Vector direction = eyelocation.getDirection().clone();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                Location now = eyelocation.clone();
-                double max = 20.0;
-                double distanceTraveled = 0.0;
-                now.getWorld().spawnParticle(Particle.END_ROD, now, 1);
-                now.add(direction.multiply(0.5));
-                distanceTraveled += 0.5;
-                for (Entity entity : now.getWorld().getNearbyEntities(now, 0.5, 0.5, 0.5)) {
-                    if (entity instanceof LivingEntity && entity != player) {
-                        LivingEntity target = (LivingEntity) entity;
-                        now.getWorld().playSound(target.getLocation(), Sound.ENTITY_EVOKER_FANGS_ATTACK, 1.0f, 1.0f);
-                        pullEntityToPlayer(player, target);
-                        cancel();
-                        return;
-                    }
-                }
-                if (distanceTraveled >= max) {
-                    cancel();}
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
-    }
-    public void pullEntityToPlayer(Player player, Entity target) {
-        Location playerLocation = player.getLocation();
-        Location targetLocation = target.getLocation();
-        Vector pullDirection = playerLocation.toVector().subtract(targetLocation.toVector()).normalize();
-        target.setVelocity(pullDirection.multiply(1.5));
     }
 
     @EventHandler
@@ -133,5 +90,17 @@ public class JobAbility implements Listener {
         event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§a§l의사§r의 §4§l치료키트"));
         event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§6§l광부§r의 §7§l곡괭이"));
         event.getDrops().removeIf(item -> item.getItemMeta().getDisplayName().equalsIgnoreCase("§7§l글라이더§r의 §0망가진 §7§l날개"));
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        if (event.getItemDrop().getItemStack().getItemMeta().getDisplayName().equalsIgnoreCase("§a§l의사§r의 §4§l치료키트") ||
+        event.getItemDrop().getItemStack().getItemMeta().getDisplayName().equalsIgnoreCase("§6§l광부§r의 §7§l곡괭이") ||
+        event.getItemDrop().getItemStack().getItemMeta().getDisplayName().equalsIgnoreCase("§7§l글라이더§r의 §0망가진 §7§l날개")){
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "이 아이템은 버릴 수 없습니다!");
+
+        }
     }
 }
