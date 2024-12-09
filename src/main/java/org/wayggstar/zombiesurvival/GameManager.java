@@ -204,6 +204,7 @@ public class GameManager implements Listener {
                 }
                 player.teleport(humansetspawn);
                 player.sendMessage(ChatColor.GREEN + "당신은 인간입니다.");
+                player.getInventory().addItem(new ItemStack(Material.TORCH));
             }
             player.setScoreboard(scoreboard);
         }
@@ -313,53 +314,56 @@ public class GameManager implements Listener {
     }
 
     public void initBurningEffect() {
-        if (gamePlaying) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        ZombieJob job = zombieJobManager.getPlayerJob(player);
-                        if (sideManager.isPlayerTeam(player.getName(), "zombie") &&
-                                (job == null || !job.getJob().equals("사막좀비"))) {
-                            if (player.getWorld().getTime() < 12300 || player.getWorld().getTime() > 23850) {
-                                if (player.getLocation().getBlock().getLightFromSky() >= 14) {
-                                    DamagePenaltyZombie.put(player.getUniqueId(), true);
-                                    if (timeManager.IsDay()) {
-                                        if (job != null && job.getJob().equals("거미좀비")) {
-                                            DamagePenaltySpider.put(player.getUniqueId(), true);
-                                            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 9999999, 0));
-
-                                        }
-                                    }
-                                    int stack = burningStack.getOrDefault(player, 0) + 1;
-                                    burningStack.put(player, stack);
-                                    if (stack >= 10) {
-                                        burningStack.put(player, 0);
-                                        player.damage(2.0);
-                                    }
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    ZombieJob job = zombieJobManager.getPlayerJob(player);
+                    if (sideManager.isPlayerTeam(player.getName(), "zombie") &&
+                            (job == null || !job.getJob().equals("사막좀비"))) {
+                        if (player.getLocation().getBlock().getLightFromSky() >= 14) {
+                            DamagePenaltyZombie.put(player.getUniqueId(), true);
+                            if (timeManager.IsDay()) {
+                                if (job != null && job.getJob().equals("거미좀비")) {
+                                    DamagePenaltySpider.put(player.getUniqueId(), true);
+                                    player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 9999999, 0));
                                 }
-                            } else {
-                                burningStack.put(player, 0);
-                                DamagePenaltySpider.put(player.getUniqueId(), false);
-                                DamagePenaltyZombie.put(player.getUniqueId(), false);
-
                             }
+                            int stack = burningStack.getOrDefault(player, 0) + 1;
+                            burningStack.put(player, stack);
+                            if (stack >= 10) {
+                                burningStack.put(player, 0);
+                                player.damage(2.0);
+                            }
+                        } else {
+                            burningStack.put(player, 0);
+                            DamagePenaltySpider.put(player.getUniqueId(), false);
+                            DamagePenaltyZombie.put(player.getUniqueId(), false);
                         }
                     }
                 }
-            }.runTaskTimer(plugin, 0L, 20L);
-        }
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 
 
     @EventHandler
     public void onDamageZombieInPenalty(EntityDamageByEntityEvent e){
-        if (e.getDamager() instanceof Player){
+        if (e.getDamager() instanceof Player) {
             Player player = (Player) e.getDamager();
-            if (DamagePenaltyZombie.get(player.getUniqueId())){
-                e.setDamage(e.getDamage() * 0.75);
-            } if (DamagePenaltySpider.get(player.getUniqueId())) {
-                e.setDamage(e.getDamage() * 0.6);
+            if (DamagePenaltySpider.containsKey(player.getUniqueId()) || DamagePenaltyZombie.containsKey(player.getUniqueId())) {
+                if (DamagePenaltyZombie.get(player.getUniqueId())) {
+                    double dam = e.getDamage();
+                    double lastdam = dam * 0.75;
+                    player.sendMessage(dam + " -> " + lastdam);
+                    e.setDamage(lastdam);
+                }
+                if (DamagePenaltySpider.get(player.getUniqueId())) {
+                    double dam = e.getDamage();
+                    double lastdam = dam * 0.6;
+                    player.sendMessage(dam + " -> " + lastdam);
+                    e.setDamage(lastdam);
+                }
             }
         }
     }
@@ -495,6 +499,7 @@ public class GameManager implements Listener {
             }
         }
         Location random = zombieSurvival.getRandomSafeLocation(player);
+        player.setBedSpawnLocation(random);
         player.teleport(getRandomLocationNearSpawn(humansetspawn, 1500));
     }
 

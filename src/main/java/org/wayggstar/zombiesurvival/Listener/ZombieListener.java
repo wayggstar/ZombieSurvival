@@ -215,7 +215,7 @@ public class ZombieListener implements Listener {
             Player player = (Player) entity;
             if (sideManager.isPlayerTeam(player.getName(), "zombie")){
                 e.setCancelled(true);
-                player.setFoodLevel(19);
+                player.setFoodLevel(16);
             }
         }
     }

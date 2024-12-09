@@ -45,15 +45,19 @@ public class ZombieJobManager {
             return null;
         }
 
-        // 이미 직업이 할당된 경우
         if (playerJobs.containsKey(player)) {
-            player.sendMessage(ChatColor.RED + "이미 좀비 직업이 할당되었습니다!");
+            playerJobs.clear();
             return null;
         }
 
-        // 직업 할당
         playerJobs.put(player, job);
         player.sendMessage(ChatColor.DARK_GREEN + "축하합니다! 당신은 특수좀비 '" + job.getJob() + ChatColor.DARK_GREEN + "'이/가 되었습니다.");
+        if (job.getJob().equals("탱커좀비")) {
+            player.setMaxHealth(40.0);
+            player.setHealth(40.0);
+        }else {
+            player.setMaxHealth(20.0);
+        }
         return job;
     }
 
