@@ -175,7 +175,6 @@ public class GameManager implements Listener {
     }
 
 
-
     private void updateTeams() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!humanList.isHuman(player)) {
@@ -351,15 +350,16 @@ public class GameManager implements Listener {
     public void onDamageZombieInPenalty(EntityDamageByEntityEvent e){
         if (e.getDamager() instanceof Player) {
             Player player = (Player) e.getDamager();
+            e.setDamage(e.getDamage() + 1);
             if (DamagePenaltySpider.containsKey(player.getUniqueId()) || DamagePenaltyZombie.containsKey(player.getUniqueId())) {
                 if (DamagePenaltyZombie.get(player.getUniqueId())) {
-                    double dam = e.getDamage();
+                    double dam = e.getDamage() + 1;
                     double lastdam = dam * 0.75;
                     player.sendMessage(dam + " -> " + lastdam);
                     e.setDamage(lastdam);
                 }
                 if (DamagePenaltySpider.get(player.getUniqueId())) {
-                    double dam = e.getDamage();
+                    double dam = e.getDamage() + 1;
                     double lastdam = dam * 0.6;
                     player.sendMessage(dam + " -> " + lastdam);
                     e.setDamage(lastdam);

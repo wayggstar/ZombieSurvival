@@ -81,7 +81,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player) || !sender.isOp()) return false;
-
+        Player player = (Player) sender;
         if (cmd.getName().equalsIgnoreCase("게임시작")) {
             gameManager.startGame();
             return true;
@@ -130,9 +130,14 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
                 return false;
             }
 
-            if (zombieJobManager.assignSpecificJob(target, job) != null) {
-                sender.sendMessage(ChatColor.GREEN + "플레이어 " + target.getName() + "에게 '" + job.getJob() + "' 직업을 성공적으로 할당했습니다.");
-                return true;
+            if (sideManager.isPlayerTeam(sender.getName(), "zombie")) {
+
+                if (zombieJobManager.assignSpecificJob(target, job) != null) {
+                    sender.sendMessage(ChatColor.GREEN + "플레이어 " + target.getName() + "에게 '" + job.getJob() + "' 직업을 성공적으로 할당했습니다.");
+                    return true;
+                }
+            }else {
+                sender.sendMessage("§c좀비팀이 아닙니다.");
             }
         }
         if (cmd.getName().equalsIgnoreCase("직업확정")) {
@@ -140,29 +145,32 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
                 sender.sendMessage(ChatColor.RED + "사용법: /직업확정 <직업> <플레이어>");
                 return true;
             }
+            if (humanList.isHuman(player)) {
+                String jobName = args[0];
+                String playerName = args[1];
+                Player target = Bukkit.getPlayer(playerName);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "플레이어 '" + playerName + "'을(를) 찾을 수 없습니다.");
+                    return true;
+                }
+                HumanJob job = humanJobManager.getAvailableJobs().stream()
+                        .filter(j -> j.getJob().equalsIgnoreCase(jobName))
+                        .findFirst()
+                        .orElse(null);
 
-            String jobName = args[0];
-            String playerName = args[1];
-            Player target = Bukkit.getPlayer(playerName);
-            if (target == null) {
-                sender.sendMessage(ChatColor.RED + "플레이어 '" + playerName + "'을(를) 찾을 수 없습니다.");
+                if (job == null) {
+                    sender.sendMessage(ChatColor.RED + "직업 '" + jobName + "'은(는) 존재하지 않습니다.");
+                    return true;
+                }
+                if (humanJobManager.forceAssignJob(target, job)) {
+                    sender.sendMessage(ChatColor.GREEN + "플레이어 '" + target.getName() + "'에게 직업 '" + job.getJob() + "'을(를) 성공적으로 확정했습니다.");
+                } else {
+                    sender.sendMessage(ChatColor.RED + "플레이어 '" + target.getName() + "'에게 직업을 확정하는 데 실패했습니다.");
+                }
                 return true;
+            }else {
+                sender.sendMessage("§c인간팀이 아닙니다.");
             }
-            HumanJob job = humanJobManager.getAvailableJobs().stream()
-                    .filter(j -> j.getJob().equalsIgnoreCase(jobName))
-                    .findFirst()
-                    .orElse(null);
-
-            if (job == null) {
-                sender.sendMessage(ChatColor.RED + "직업 '" + jobName + "'은(는) 존재하지 않습니다.");
-                return true;
-            }
-            if (humanJobManager.forceAssignJob(target, job)) {
-                sender.sendMessage(ChatColor.GREEN + "플레이어 '" + target.getName() + "'에게 직업 '" + job.getJob() + "'을(를) 성공적으로 확정했습니다.");
-            } else {
-                sender.sendMessage(ChatColor.RED + "플레이어 '" + target.getName() + "'에게 직업을 확정하는 데 실패했습니다.");
-            }
-            return true;
         }
         return false;
     }
@@ -193,6 +201,7 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
     public HumanList getHumanList() {
         return humanList;
     }
+
     private void loadConfigValues() {
         FileConfiguration config = getConfig();
         maxX = config.getInt("mapsize.X", 3000);
@@ -217,7 +226,4 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         }
         return null;
     }
-
-
-
 }
