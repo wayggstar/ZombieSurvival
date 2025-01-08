@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -12,16 +13,12 @@ public class TimeManager {
     private boolean morningMessageSent = false;
     private boolean nightMessageSent = false;
     private final GameManager gameManager;
-    private int gameDay = 0;
+    public int gameDay = 0;
     private final JavaPlugin plugin;
 
     public TimeManager(JavaPlugin plugin, GameManager gameManager) {
         this.plugin = plugin;
         this.gameManager = gameManager;
-    }
-
-    public void resetDayCycle() {
-        gameDay = 1;
     }
 
     public void startDayNightCycle() {
@@ -54,7 +51,7 @@ public class TimeManager {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 100L);
+        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     private void broadcastMessage(String message) {

@@ -4,6 +4,7 @@ import armorequip.armorequip.ArmorEquip;
 import armorequip.armorequip.ArmorEquipEvent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Hopper;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
@@ -106,6 +107,38 @@ public class ZombieListener implements Listener {
     }
 
     @EventHandler
+    public void onPlayerItemUse(PlayerInteractEvent e) {
+        Player player = e.getPlayer();
+        if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+            ItemStack newItemR = player.getInventory().getItemInMainHand();
+            ItemStack newItemL = player.getInventory().getItemInOffHand();
+            for (ItemStack itemStack : getItemStacks()) {
+                if (newItemR.getType() == itemStack.getType() || newItemL.getType() == itemStack.getType()) {
+                    e.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + "좀비는 다이아몬드 아이템을 사용할 수 없습니다.");
+                    break;
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerItemUse(EntityDamageByEntityEvent e) {
+        Player player = (Player) e.getDamager();
+        if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+            ItemStack newItemR = player.getInventory().getItemInMainHand();
+            ItemStack newItemL = player.getInventory().getItemInOffHand();
+            for (ItemStack itemStack : getItemStacks()) {
+                if (newItemR.getType() == itemStack.getType() || newItemL.getType() == itemStack.getType()) {
+                    e.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + "좀비는 다이아몬드 아이템을 사용할 수 없습니다.");
+                    break;
+                }
+            }
+        }
+    }
+
+    @EventHandler
     public void BlockingBow(PlayerItemHeldEvent e) {
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
@@ -120,15 +153,28 @@ public class ZombieListener implements Listener {
     }
 
     @EventHandler
+    public void BlockingBowUse(PlayerInteractEvent e) {
+        Player player = e.getPlayer();
+        if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
+            ItemStack newItem = player.getInventory().getItemInMainHand();
+            ItemStack newItemL = player.getInventory().getItemInOffHand();
+            if (newItem.getType() == Material.CROSSBOW || newItem.getType() == Material.BOW || newItemL.getType() == Material.CROSSBOW || newItemL.getType() == Material.BOW) {
+                e.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "좀비는 활/석궁을 사용할 수 없습니다.");
+            }
+        }
+    }
+
+    @EventHandler
     public void InteractChestZombie(PlayerInteractEvent e){
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
             if (e.getClickedBlock() == null) {
                 return;
             }
-            if (e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.TRAPPED_CHEST) {
+            if (e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.TRAPPED_CHEST || e.getClickedBlock().getType() == Material.DISPENSER || e.getClickedBlock().getType() == Material.DROPPER || e.getClickedBlock().getType() == Material.BARREL) {
                 e.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "좀비는 상자를 사용할 수 없습니다.");
+                player.sendMessage(ChatColor.RED + "좀비는 보관류 아이템을 사용할 수 없습니다.");
             }
 
         }
@@ -150,9 +196,6 @@ public class ZombieListener implements Listener {
     public void HopperBlock(BlockPlaceEvent e){
         Player player = e.getPlayer();
         if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
-            if (e.getBlock() == null) {
-                return;
-            }
             if (e.getBlock().getType() == Material.HOPPER || e.getBlock().getType() == Material.HOPPER_MINECART) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 호퍼를 설치할 수 없습니다.");
@@ -205,6 +248,10 @@ public class ZombieListener implements Listener {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "좀비는 주민과 거래할 수 없습니다.");
             }
+            if (e.getRightClicked() instanceof HopperMinecart){
+                e.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "좀비는 홒퍼카트를 쓸 수 없습니다.");
+            }
         }
     }
 
@@ -215,7 +262,7 @@ public class ZombieListener implements Listener {
             Player player = (Player) entity;
             if (sideManager.isPlayerTeam(player.getName(), "zombie")){
                 e.setCancelled(true);
-                player.setFoodLevel(16);
+                player.setFoodLevel(19);
             }
         }
     }
@@ -256,7 +303,12 @@ public class ZombieListener implements Listener {
                     Player target = randomplayer.get(random.nextInt(randomplayer.size()));
                     Location targetLocation = target.getLocation();
                     setupCompass(player, target, targetLocation);
-                }
+                    ItemStack diamondInHand = player.getInventory().getItemInMainHand();
+                    if (diamondInHand.getAmount() > 1) {
+                        diamondInHand.setAmount(diamondInHand.getAmount() - 1);
+                    } else {
+                        player.getInventory().setItemInMainHand(null);
+                    }                }
             }
         }
     }
@@ -279,6 +331,9 @@ public class ZombieListener implements Listener {
         if (e.getDestination().getHolder() instanceof HopperMinecart) {
             e.setCancelled(true);
             ((HopperMinecart) e.getDestination().getHolder()).remove();
+        }
+        if (e.getDestination().getHolder() instanceof Hopper){
+            e.setCancelled(true);
         }
     }
 

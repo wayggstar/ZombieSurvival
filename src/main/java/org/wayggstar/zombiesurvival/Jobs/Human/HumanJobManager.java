@@ -74,6 +74,15 @@ public class HumanJobManager {
         }
     }
 
+    public void resetJobOfPlayer(Player player) {
+        playerJobs.remove(player);
+        HumanJob job = playerJobs.get(player);
+        if (job != null) {
+            player.getInventory().removeItem(job.getStartingItems().toArray(new ItemStack[0]));
+        }
+        player.sendMessage(ChatColor.RED + "강제로 직업이 초기화되었습니다.");
+    }
+
     public boolean forceAssignJob(Player player, HumanJob job) {
         if (!availableJobs.contains(job)) {
             player.sendMessage(ChatColor.RED + "직업 '" + job.getJob() + "'은(는) 유효하지 않습니다.");

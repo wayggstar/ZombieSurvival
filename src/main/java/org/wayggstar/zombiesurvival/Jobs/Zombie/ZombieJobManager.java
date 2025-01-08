@@ -79,4 +79,12 @@ public class ZombieJobManager {
             }
         }
     }
+
+    public void resetJobOfPlayer(Player player) {
+        ZombieJob job = playerJobs.get(player);
+        if (job != null) {
+            player.sendMessage(ChatColor.RED + "게임 종료로 인해 좀비 직업이 초기화되었습니다.");
+            playerJobs.remove(player);
+        }
+    }
 }

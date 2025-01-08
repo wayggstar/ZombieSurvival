@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
@@ -50,7 +51,6 @@ public class GameManager implements Listener {
     private final HumanList humanList;
     private TimeManager timeManager;
     private boolean gamePlaying = false;
-    private int gameDay = 0;
     private final Map<Player, Integer> burningStack = new HashMap<>();
     public List<HumanJob> humanJobs = new ArrayList<>();
     public List<ZombieJob> zombieJobs = new ArrayList<>();
@@ -138,14 +138,12 @@ public class GameManager implements Listener {
     public void startGame() {
         if (gamePlaying) return;
         gamePlaying = true;
-        gameDay = 1;
         World world = Bukkit.getWorld("world");
         if (world != null) world.setTime(0);
         updateTeams();
         Bukkit.broadcastMessage(ChatColor.GREEN + "게임이 시작되었습니다!");
         assignJobsToHumans();
         assignJobsToZombies();
-        timeManager.resetDayCycle();
         timeManager.startDayNightCycle();
     }
 
@@ -154,7 +152,7 @@ public class GameManager implements Listener {
         humanJobManager.resetJobs();
         if (!gamePlaying) return;
         gamePlaying = false;
-        gameDay = 0;
+        timeManager.gameDay = 0;
         World world = Bukkit.getWorld("world");
         if (world != null) world.setTime(0);
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -167,6 +165,8 @@ public class GameManager implements Listener {
             player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
             player.setFoodLevel(20);
             player.setGameMode(GameMode.SURVIVAL);
+            player.setMaxHealth(20);
+
         }
     }
 
@@ -197,6 +197,8 @@ public class GameManager implements Listener {
                 }
 
                 player.sendMessage(ChatColor.RED + "당신은 좀비 팀에 추가되었습니다.");
+
+
             } else {
                 if (humansetspawn == null) {
                     humansetspawn = player.getWorld().getSpawnLocation();
@@ -210,22 +212,21 @@ public class GameManager implements Listener {
     }
 
     public Location getRandomLocationNearSpawn(Location spawn, int range) {
+        World world = spawn.getWorld();
+        Random random = new Random();
+
         for (int attempts = 0; attempts < 10; attempts++) {
             int x = spawn.getBlockX() + random.nextInt(range * 2) - range;
             int z = spawn.getBlockZ() + random.nextInt(range * 2) - range;
-            int y = Bukkit.getWorld("world").getHighestBlockYAt(x, z);
+            int y = world.getHighestBlockYAt(x, z);
 
-            if (y <= 0 || y >= 250) continue;
-
-            Location location = new Location(Bukkit.getWorld("world"), x + 0.5, y, z + 0.5);
-            Material blockType = Bukkit.getWorld("world").getBlockAt(location).getType();
-
-            if (blockType != Material.WATER && blockType != Material.LAVA) {
-                return location;
+            if (y > 0 && y < 250) {
+                return new Location(world, x + 0.5, y, z + 0.5);
             }
         }
         return null;
     }
+
     private void assignJobsToZombies() {
         for (Player player : getServer().getOnlinePlayers()) {
             if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
@@ -277,7 +278,9 @@ public class GameManager implements Listener {
                 survivor = 0;
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (!sideManager.isPlayerTeam(player.getName(), "zombie")) {
-                        survivor += 1;
+                        if (humanList.isHuman(player)) {
+                            survivor += 1;
+                        }
                     }
                 }
                 if (survivor == 0){
@@ -286,7 +289,7 @@ public class GameManager implements Listener {
                 String formattedTime = GameUtils.convertTicksToTime(world.getTime());
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(
-                            gameDay + "일차 / 현재 시간: " + ChatColor.YELLOW + formattedTime + " / 생존자 수: " + ChatColor.GREEN + survivor));
+                            timeManager.gameDay + "일차 / 현재 시간: " + ChatColor.YELLOW + formattedTime + " / 생존자 수: " + ChatColor.GREEN + survivor));
 
                 }
             }
@@ -321,6 +324,7 @@ public class GameManager implements Listener {
                     if (sideManager.isPlayerTeam(player.getName(), "zombie") &&
                             (job == null || !job.getJob().equals("사막좀비"))) {
                         if (player.getLocation().getBlock().getLightFromSky() >= 14) {
+                            if (!timeManager.IsDay()){return;}
                             DamagePenaltyZombie.put(player.getUniqueId(), true);
                             if (timeManager.IsDay()) {
                                 if (job != null && job.getJob().equals("거미좀비")) {
@@ -345,29 +349,31 @@ public class GameManager implements Listener {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-
     @EventHandler
     public void onDamageZombieInPenalty(EntityDamageByEntityEvent e){
         if (e.getDamager() instanceof Player) {
             Player player = (Player) e.getDamager();
-            e.setDamage(e.getDamage() + 1);
             if (DamagePenaltySpider.containsKey(player.getUniqueId()) || DamagePenaltyZombie.containsKey(player.getUniqueId())) {
                 if (DamagePenaltyZombie.get(player.getUniqueId())) {
-                    double dam = e.getDamage() + 1;
+                    double dam = e.getDamage();
                     double lastdam = dam * 0.75;
-                    player.sendMessage(dam + " -> " + lastdam);
                     e.setDamage(lastdam);
                 }
                 if (DamagePenaltySpider.get(player.getUniqueId())) {
                     double dam = e.getDamage() + 1;
                     double lastdam = dam * 0.6;
-                    player.sendMessage(dam + " -> " + lastdam);
+                    e.setDamage(lastdam);
+                }
+            }
+            if (humanList.isHuman(player) && !sideManager.isPlayerTeam(player.getName(), "zombie")){
+                if (e.getEntity() instanceof Player){
+                    double dam = e.getDamage();
+                    double lastdam = dam * 1.25;
                     e.setDamage(lastdam);
                 }
             }
         }
     }
-
     @EventHandler
     public void onAfraidgetDamage(EntityDamageEvent e){
         if (e.getEntity() instanceof Player) {
@@ -399,19 +405,7 @@ public class GameManager implements Listener {
         }
     }
 
-/*
-    @EventHandler
-    public void onDamageZombie(EntityDamageEvent e){
-        if (e.getEntity() instanceof Player) {
-            if (timeManager.IsDay()) {
-                Player player = (Player) e.getEntity();
-                if (sideManager.isPlayerTeam(player.getName(), "zombie")) {
-                    e.setDamage(e.getDamage() * 1.25);
-                }
-            }
-        }
-    }
- */
+
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent e) {
         if (gamePlaying){
@@ -425,7 +419,7 @@ public class GameManager implements Listener {
         humanJobManager.resetJobs();
         if (!gamePlaying) return;
         gamePlaying = false;
-        gameDay = 0;
+        timeManager.gameDay = 0;
         World world = Bukkit.getWorld("world");
         if (world != null) world.setTime(0);
         Team zombie = scoreboard.getTeam("zombie");
@@ -449,7 +443,7 @@ public class GameManager implements Listener {
         humanJobManager.resetJobs();
         if (!gamePlaying) return;
         gamePlaying = false;
-        gameDay = 0;
+        timeManager.gameDay = 0;
         World world = Bukkit.getWorld("world");
         if (world != null) world.setTime(0);
         Team zombie = scoreboard.getTeam("zombie");
@@ -498,14 +492,19 @@ public class GameManager implements Listener {
                 event.setDeathMessage(" ");
             }
         }
-        Location random = zombieSurvival.getRandomSafeLocation(player);
-        player.setBedSpawnLocation(random);
-        player.teleport(getRandomLocationNearSpawn(humansetspawn, 1500));
     }
 
     @EventHandler
     public void onPlayerPortal(PlayerPortalEvent event) {
         event.setCancelled(true);
         event.getPlayer().sendMessage("포탈 이동이 차단되었습니다.");
+    }
+
+    @EventHandler
+    public void onSpawn(PlayerRespawnEvent event) {
+        if (gamePlaying) {
+            Location random = getRandomLocationNearSpawn(humansetspawn, 1500);
+            event.setRespawnLocation(random);
+        }
     }
 }

@@ -41,7 +41,7 @@ public class TabCompleterHuman implements TabCompleter {
                 if (humanList.getPlayerNames() != null && !humanList.getPlayerNames().isEmpty()) {
                     suggestions = Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
-                            .filter(name -> !humanList.getPlayerNames().contains(name))
+                            .filter(name -> humanList.getPlayerNames().contains(name))
                             .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
                             .collect(Collectors.toList());
                 }

@@ -15,3 +15,7 @@ commands:
     description: 직업을 확정합니다.
   스폰지점:
     description: 인간의 시작지점
+  특수좀비제거:
+    description: 좀직제거
+  직업확정제거:
+    description: 인직제거

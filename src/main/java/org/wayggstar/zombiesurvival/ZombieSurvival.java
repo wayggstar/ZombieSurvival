@@ -75,6 +75,8 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
         getCommand("특수좀비").setTabCompleter(new TabCompleterZombie(zombieJobManager, humanList));
         getCommand("직업확정").setTabCompleter(new TabCompleterHuman(humanJobManager, humanList));
         getCommand("스폰지정");
+        getCommand("특수좀비제거");
+        getCommand("직업확정제거");
 
     }
 
@@ -130,12 +132,46 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
                 return false;
             }
 
-            if (sideManager.isPlayerTeam(sender.getName(), "zombie")) {
+            if (sideManager.isPlayerTeam(target.getName(), "zombie")) {
 
                 if (zombieJobManager.assignSpecificJob(target, job) != null) {
                     sender.sendMessage(ChatColor.GREEN + "플레이어 " + target.getName() + "에게 '" + job.getJob() + "' 직업을 성공적으로 할당했습니다.");
                     return true;
                 }
+            }else {
+                sender.sendMessage("§c좀비팀이 아닙니다.");
+            }
+        }
+
+        if (cmd.getName().equalsIgnoreCase("특수좀비제거")) {
+            if (args.length != 1) {
+                sender.sendMessage(ChatColor.RED + "사용법: /특수좀비제거 <플레이어>");
+                return false;
+            }
+            String playerName = args[0];
+
+            Player target = Bukkit.getPlayer(playerName);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + "플레이어 " + playerName + "을(를) 찾을 수 없습니다.");
+                return false;
+            }
+
+            if (zombieJobManager == null) {
+                sender.sendMessage(ChatColor.RED + "좀비 직업 관리자 초기화 오류");
+                return false;
+            }
+
+            ZombieJob job = zombieJobManager.getPlayerJob(target);
+
+            if (job == null) {
+                sender.sendMessage(ChatColor.RED + playerName + "§c는 직업을 가지고 있지 않습니다.");
+                return false;
+            }
+
+            if (sideManager.isPlayerTeam(sender.getName(), "zombie")) {
+                zombieJobManager.resetJobOfPlayer(target);
+                sender.sendMessage(ChatColor.GREEN + "플레이어 " + target.getName() + "에게서 '" + job.getJob() + "' 직업을 성공적으로 제거했습니다.");
+                return true;
             }else {
                 sender.sendMessage("§c좀비팀이 아닙니다.");
             }
@@ -164,9 +200,31 @@ public final class ZombieSurvival extends JavaPlugin implements CommandExecutor 
                 }
                 if (humanJobManager.forceAssignJob(target, job)) {
                     sender.sendMessage(ChatColor.GREEN + "플레이어 '" + target.getName() + "'에게 직업 '" + job.getJob() + "'을(를) 성공적으로 확정했습니다.");
+                    if (job.getJob().equalsIgnoreCase("소방대원")){
+                        target.setMaxHealth(30);
+                    }
                 } else {
                     sender.sendMessage(ChatColor.RED + "플레이어 '" + target.getName() + "'에게 직업을 확정하는 데 실패했습니다.");
                 }
+                return true;
+            }else {
+                sender.sendMessage("§c인간팀이 아닙니다.");
+            }
+        }
+        if (cmd.getName().equalsIgnoreCase("직업확정제거")) {
+            if (args.length != 1) {
+                sender.sendMessage(ChatColor.RED + "사용법: /직업확정제거 <플레이어>");
+                return true;
+            }
+            if (humanList.isHuman(player)) {
+                String playerName = args[0];
+                Player target = Bukkit.getPlayer(playerName);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "플레이어 '" + playerName + "'을(를) 찾을 수 없습니다.");
+                    return true;
+                }
+                humanJobManager.resetJobOfPlayer(target);
+                sender.sendMessage(ChatColor.GREEN + "플레이어 " + target.getName() + "에게서 직업을 성공적으로 제거했습니다.");
                 return true;
             }else {
                 sender.sendMessage("§c인간팀이 아닙니다.");
